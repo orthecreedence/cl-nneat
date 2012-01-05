@@ -1,3 +1,11 @@
+;;; Defines the genome class. The genome system works not by describing a
+;;; network state, but instead describing the instructions on how to build the
+;;; network. This was the only way I could think of to serialize a network into
+;;; a one-dimensional array. Seems to work well for now.
+;;;
+;;; Note that the only problem with this approach is an ever-growing genome...
+;;; even if a connection is added then removed later on, both instructions are
+;;; still encoded into the genome indefinitely.
 (in-package :nneat)
 
 (defclass genome ()
@@ -22,6 +30,10 @@
         (return-from get-object-in-genome (getf gene :object))))))
 
 (defmethod update-genome-meta ((genome genome) (id integer) &rest meta)
+  "Given a genome and an object id, update the meta for that object with the
+  given metadata. This is useful when mutating if you want to update a network's
+  structure, but also want to make sure the metadata for that item is up to
+  date."
   (let ((meta-list (plist-iter meta))
         (gene (find-if (lambda (g) (eql (getf g :id) id))
                        (genome-genes genome))))
@@ -32,6 +44,22 @@
         nil)))
 
 (defmethod crossover ((mom-genome genome) (dad-genome genome) &key position)
+  "Run the genetic crossover function on two genomes. This specific version
+  finds the mid-point of the shortest genome, and swaps the genes after it with
+  the paired genome. For ex:
+
+            | midpoint of shortest gene
+     aabacbddbaddba
+     aabdccdcbaaadacca
+
+  would yield the genomes:
+
+            | ends of genes are swapped after this point
+     aabacbdcbaaadacca
+     aabdccddbaddba
+
+  Note that these are not what real genomes look like, this is just a functional
+  example."
   (let* ((mom (genome-genes mom-genome))
          (dad (genome-genes dad-genome))
          (length-mom (length mom))
@@ -56,7 +84,10 @@
 (defmethod mutate (net &key (probabilities *mutate-probabilities*))
   "Out of the given possible actions (and their probabilities of occuring) in
   probabilities, pick an action based on a weighted-random selection and perform
-  the selected action."
+  the selected action.
+  
+  Listens for errors in do-mutate and tries the next available mutation if one
+  occurs."
   (let* ((probs (sort (plist-iter probabilities) (lambda (a b) (< (cadr b) (cadr a)))))
          (prob-sum (reduce (lambda (a b) (+ (if (numberp a) a (cadr a))
                                             (if (numberp b) b (cadr b))))
@@ -81,18 +112,31 @@
       (values net action id))))
 
 (defmethod do-mutate (net (action keyword))
+  "Perform mutation on a network. Does its best to follow all given genetic
+  rules, but does no work to catch errors. This must be done by the caller.
+  This returns the id of whatever object was operated on."
   (case action
+        ;; creating neurons is tricky business, it's best to just split a 
+        ;; connection.
         ;(:create-neuron
         ;  (id (modify-net net :create-neuron)))
+
+        ;; create a new connection. new connections are only allowed to connect
+        ;; non-input/output neurons to other non-input/output neurons.
         (:create-connection
           (let ((neurons nil))
+            ;; grab all eligible neurons
             (traverse-net net (lambda (n) (when (eql (neuron-type n) :neuron)
                                             (push n neurons))))
+            ;; pick two random neurons from the eligible pool and connect them
             (let ((n1 (nth (random (length neurons)) neurons))
                   (n2 (nth (random (length neurons)) neurons)))
               (id (modify-net net :create-connection n1 n2)))))
+
+        ;; split an existing connection, or mutate a connection weight
         ((:split-connection :mutate-connection-weight)
           (let ((connections nil))
+            ;; grab a unique list of all existing connections
             (traverse-net net (lambda (n)
                                 (when (eql (neuron-type n) :neuron)
                                   (loop for c across (neuron-inputs n) do
@@ -101,18 +145,40 @@
                                   (loop for c in (neuron-outputs n) do
                                         (unless (contains connections c)
                                           (push c connections))))))
+            ;; pick a connection at random out of the eligible connection pool
             (let ((connection (nth (random (length connections)) connections)))
               (case action
+                    ;; split the connection with a new neuron
                     (:split-connection
                       (modify-net net :split-connection connection))
+                    ;; modify the connection's weight value
                     (:mutate-connection-weight
                       (incf (connection-weight connection)
                             (- (random (* 2 *connection-weight-mutate-max*))
                                *connection-weight-mutate-max*))
+                      ;; if negatives weights aren't allowed, enforce here
+                      (unless *connection-negative-weights*
+                        (setf (connection-weight connection)
+                              (max 0 (connection-weight connection))))
+                      ;; make sure the weight isn't exceeding its maximum(s)
+                      (let* ((weight (connection-weight connection))
+                             (weight-abs (abs weight)))
+                        (when (< *connection-weight-max* weight-abs)
+                          (if (< 0 weight)
+                              (setf (connection-weight connection) *connection-weight-max*)
+                              (setf (connection-weight connection) (- *connection-weight-max*)))))
+                      ;; keep the weight value in sync with the genome's 
+                      ;; metadata (used to rebuild the net from the genome)
                       (update-genome-meta (net-genome net) (id connection) :weight (connection-weight connection))))
               (id connection))))
+
+        ;; remove a connection from the network. removed connection must not be
+        ;; between any neuron and an input/output, and a connection which is the
+        ;; last input or output of a neuron cannot be removed either (although
+        ;; this is enforced in (remove-connection) and not here).
         (:remove-connection
           (let ((connections nil))
+            ;; grab a list of eligible connections
             (traverse-net net (lambda (n)
                                 (when (eql (neuron-type n) :neuron)
                                   (loop for c across (neuron-inputs n) do
@@ -121,16 +187,26 @@
                                   (loop for c in (neuron-outputs n) do
                                         (unless (eql (neuron-type (connection-to c)) :output)
                                           (push c connections))))))
+            ;; pick a connection and modify it
             (let ((connection (nth (random (length connections)) connections)))
               (modify-net net :remove-connection connection)
               (id connection))))
+
+        ;; mutate the threshold value of a neuron. 
         (:mutate-neuron-threshold
           (let ((neurons nil))
+            ;; grab all neurons
             (traverse-net net (lambda (n) (when (eql (neuron-type n) :neuron)
                                             (push n neurons))))
+            ;; pick a random neuron and modify its threshold
             (let ((neuron (nth (random (length neurons)) neurons)))
               (incf (neuron-threshold neuron)
                     (- (random (* 2 *neuron-threshold-mutate-max*))
                        *neuron-threshold-mutate-max*))
+              ;; keep the threshold above 0
+              (setf (neuron-threshold neuron)
+                    (max 0 (neuron-threshold neuron)))
+              ;; keep the threshold in the genome metadata in sync the the 
+              ;; network's value
               (update-genome-meta (net-genome net) (id neuron) :threshold (neuron-threshold neuron))
               (id neuron))))))

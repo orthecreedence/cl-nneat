@@ -1,15 +1,19 @@
+;;; Provides basic utility functions used through the system.
+
 (in-package :nneat)
 
 (defun contains (list value &key (test #'equal))
-  (not (zerop (length (remove-if (lambda (item)
-                                   (not (funcall test item value)))
-                                 list)))))
+  "Test if a value exists in the given list. Default test is #'equal"
+  (not (not (find-if (lambda (item)
+                       (funcall test item value))
+                     list))))
 
 (defmacro appendf (append-to list-items)
+  "Destructively appends one list to another."
   `(setf ,append-to (append ,append-to ,list-items)))
 
 (defun c-getf (plist key)
-  "Given a set of funciton arguments, pull out the value for a
+  "Given a set of function arguments, pull out the value for a
   keyword argument. If it isn't present, return nil."
   (let ((next-item nil))
     (dolist (item plist)
@@ -21,7 +25,8 @@
 
 (defun plist-iter (plist)
   "Turns (:id 16 :friends 0 :fav-animal 'pelican) into
-  ((:id 16) (:friends 0) (:fav-animal 'pelican))"
+  ((:id 16) (:friends 0) (:fav-animal 'pelican))
+  which is a lot easier to operate on as a set of pairs."
   (let ((collection nil)
         (next-val nil)
         (tmp nil))
@@ -33,8 +38,8 @@
                  (setf tmp (list p)))))
     (reverse collection)))
 
-
 (defun remprops (plist props)
+  "Removes a set of properties and their values from a property list."
   (let ((newlist nil)
         (ignore-next nil))
     (dolist (item plist)
@@ -48,6 +53,9 @@
     (reverse newlist)))
   
 (defun print-net (net)
+  "Shitty function to print out a network. The output is hard to parse unless
+  you know exactly how the traverse-net function iterates over a network. Event
+  then, a complicated network is really hard to visualize from this."
   (format t "~%---------------------------~%")
   (traverse-net
     (create-net-from-genome (net-genome net))

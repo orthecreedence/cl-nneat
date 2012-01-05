@@ -1,3 +1,8 @@
+;;; defines the class and methods for connections, which are the glue to a
+;;; network. connections connect neurons between eachother in various patterns.
+;;; connections can be forward or backward (ie temporal) and the system makes no
+;;; distinction between the two types. in other words, a connection can connect
+;;; any regular neuron to any regular neuron, eve itself.
 (in-package :nneat)
 
 (defclass connection (base)
@@ -32,7 +37,10 @@
                                    :from from
                                    :to to
                                    :output initial-value
-                                   :weight (or weight (* 2 (- (random 1.0) 0.5))))))
+                                   :weight (let ((weight (random *connection-weight-initial-value*)))
+                                             (if *connection-allow-negative-weights*
+                                                 (* weight (1- (* 2 (random 2))))
+                                                 weight)))))
     (when to
       (vector-push-extend connection (neuron-inputs to)))
     (when from
@@ -41,7 +49,10 @@
 
 (defmethod remove-connection ((c connection) &key ignore-errors)
   "Given a connection, unregister it with the two neurons it connects to. Cannot
-  be called while the network is being processed. Well, it can, but I wouldn't."
+  be called while the network is being processed. Well, it can, but I wouldn't.
+  It also checks if the neuron's last incoming/outgoing connection is being
+  removed, and if so fires a 'connection-is-required error that the genetic
+  system must handle (probably by ignoring and trying a different mutation)."
   (let ((to (connection-to c))
         (from (connection-from c)))
     (when (and (not ignore-errors)
@@ -71,10 +82,11 @@
       (unless remove-all (return)))))
 
 (defmethod activate-connection ((c connection) (value number) &key (propagate t))
-  "Take the output of a neuron that fired (or didn't) and enter is as the input
+  "Take the output of a neuron that fired (or didn't) and enter it as the input
   to the connection's TO neuron in the correct slot. This function takes care of
   weighting the value value (inp * weight) before entering the input to the
-  resulting neuron."
+  resulting neuron. It also calls run-neuron on its outgoing neuron connection
+  if propagate is T."
   (let ((neuron (connection-to c))
         (output (* (connection-weight c) value)))
     (setf (connection-output c) output)

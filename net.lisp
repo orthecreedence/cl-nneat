@@ -1,3 +1,14 @@
+;;; Defines the net class, which is used to wrap around a network of neurons
+;;; connecting to each other. It enforces a few rules, such as a static number
+;;; of inputs and outputs, and does its best to make sure the neurons have a
+;;; healthy set of connections (although to some extent there is only so much
+;;; you can do to govern this).
+;;;
+;;; The network tracks all modifications make to it (assuming they happen 
+;;; through modify-net) and creates its own genetic structure out of these
+;;; modifications. In other words, its genome is a set of instructions to build
+;;; an exact copy of the network as it exists.
+
 (in-package :nneat)
 
 (defclass net ()
@@ -90,19 +101,29 @@
   (1- (incf (net-ids net))))
 
 (defmethod modify-net ((net net) (action keyword) &rest args)
+  "This method is the bread and butter of the network. It allows the network's
+  structure to be morphed and grown/shrunk, but tracks all actions that happen
+  to the network sequentially using the network's genome.
+  
+  This means that given a genome, a new network can be created, from scratch,
+  that is an exact copy of the original, just by running the commands encoded in
+  the genome."
   (let ((obj-id nil)
         (obj nil)
         (obj-meta nil))
     (labels ((create-with-id (fn args)
                "Call the given function, give a unique id to the resulting
-               object, and set the object, its id, and any metadata into our top
-               level bindings."
+               object, and set the object and its id into our top level
+               bindings."
                (let ((new-obj (apply fn args)))
                   (setf obj-id (next-id net))
                   (setf (id new-obj) obj-id)
                   (setf obj new-obj)
                   obj)))
-      ;; create the object/object-id for whatever action we're taking
+      ;; create the object/object-id for whatever action we're taking, making
+      ;; sure to track the metadata associated with that object (weight value,
+      ;; threshold value, etc) so that it can be re-created directly from the
+      ;; genome later on.
       (case action
             (:create-neuron
               (let ((neuron (create-with-id #'create-neuron args)))
@@ -129,6 +150,9 @@
                   (modify-net net :remove-connection connection :ignore-errors t)
                   (modify-net net :create-connection from neuron :weight weight)
                   (modify-net net :create-connection neuron to))))))
+
+    ;; now that we have the objects/metadata we need, encode this action into
+    ;; the genome.
     (case action
           ((:create-neuron :create-connection)
            (add-gene (net-genome net) 

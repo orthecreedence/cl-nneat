@@ -1,10 +1,21 @@
+;;; Defines the neuron class, which provides a simple way to sum weighted values
+;;; from other connected neurons and fire its outgoing connections with the 
+;;; resulting values. The inputs/outputs are of type 'connection, which is where
+;;; the weight values live.
+;;;
+;;; There are three types of neurons: :input :output :neuron. :input and :output
+;;; provide no mathematical processesing, and must have ONLY ONE output and
+;;; input (repectively). :neuron is the normal neuron type, provides sigmoid 
+;;; summation and processing, and can have an arbitrary number of incoming/
+;;; outgoing connections (it can even connect to itself).
+
 (in-package :nneat)
 
 (defclass neuron (base)
   ((inputs :accessor neuron-inputs :initform (make-array 0 :adjustable t :fill-pointer t))
    (outputs :accessor neuron-outputs :initform nil)
    (output :accessor neuron-output :initform nil)
-   (threshold :accessor neuron-threshold :initarg :threshold :initform 1/2)
+   (threshold :accessor neuron-threshold :initarg :threshold :initform *neuron-default-threshold*)
    (has-run :accessor neuron-has-run :initform nil)
    (type :accessor neuron-type :initarg :type :initform :neuron))
   (:documentation "The neuron class is a model of a single neuron. It sums its
@@ -43,6 +54,7 @@
     (activate-connection c (neuron-output n) :propagate propagate)))
 
 (defmethod sum-inputs ((n neuron))
+  "Given a neuron, grab all the values from its inputs and return the sum."
   (let ((sum 0))
     (loop for inp across (neuron-inputs n) do
           (let ((value (case (type-of inp)
