@@ -1,46 +1,50 @@
-(defclass neuron ()
+(in-package :nneat)
+
+(defclass neuron (base)
   ((inputs :accessor neuron-inputs :initform (make-array 0 :adjustable t :fill-pointer t))
    (outputs :accessor neuron-outputs :initform nil)
    (output :accessor neuron-output :initform nil)
-   (threshold :accessor neuron-threshold :initform .5)
+   (threshold :accessor neuron-threshold :initarg :threshold :initform 1/2)
    (has-run :accessor neuron-has-run :initform nil)
-   (is-node :accessor neuron-is-node :initarg :is-node :initform nil)))
+   (type :accessor neuron-type :initarg :type :initform :neuron)))
+
+(defmethod create-neuron (&key (type :neuron) (threshold 1/2))
+  (make-instance 'neuron :type type :threshold threshold))
 
 (defmethod run-neuron ((n neuron) &key (propagate t))
   "Take this neuron's inputs and calculate the output value."
   (when (all-inputs-recieved n)
-    ;(format t "~%running ~a ~a~%" (if (neuron-is-node n) "node" "neuron") n)
-    (if (neuron-is-node n)
-        ;; neuron is a node, meaning it blindly passes its input to output (only
-        ;; one input allowed, obviously). this is good for input/output neurons
-        (setf (neuron-output n)
-              (get-neuron-input n 0))
-        ;; regular neuron, sum up and threshold the inputs
-        (let ((result (sig (reduce (lambda (inp1 inp2) (+ (if (numberp inp1) inp1 (connection-output inp1))
-                                                          (if (numberp inp2) inp2 (connection-output inp2))))
-                                   (neuron-inputs n)))))
-          (if (< (neuron-threshold n) result)
-              (setf (neuron-output n) (if *neuron-binary-output* 1 result))
-              (setf (neuron-output n) 0))))
+    (case (neuron-type n)
+          (:input
+            (setf (neuron-output n) (elt (neuron-inputs n) 0)))
+          (:output
+            (setf (neuron-output n) (connection-output (elt (neuron-inputs n) 0))))
+          (:neuron
+            ;; regular neuron, sum up and threshold the inputs
+            (let ((result (sigmoid (sum-inputs n))))
+              (if (< (neuron-threshold n) result)
+                  (setf (neuron-output n) (if *neuron-binary-output* 1 result))
+                  (setf (neuron-output n) 0)))))
     ;; neuron ran, mark it as such
     (setf (neuron-has-run n) t)
     (clear-inputs n)
     ;; push the output value to all outgoing connections
     (run-outputs n :propagate propagate)))
 
-(defmethod get-neuron-input ((n neuron) (index number))
-  (let ((input (elt (neuron-inputs n) index)))
-    (cond ((numberp input)
-           input)
-          ((eql (type-of input) 'connection)
-           (connection-output input))
-          (t input))))
-
 (defmethod run-outputs ((n neuron) &key (propagate t))
   "Process all outgoing outputs for this neuron."
-  ;(format t "running outputs for ~a ~a:~%~a~%" (if (neuron-is-node n) "node" "neuron") n (neuron-outputs n))
   (dolist (c (neuron-outputs n))
     (activate-connection c (neuron-output n) :propagate propagate)))
+
+(defmethod sum-inputs ((n neuron))
+  (let ((sum 0))
+    (loop for inp across (neuron-inputs n) do
+          (let ((value (case (type-of inp)
+                             (connection (connection-output inp))
+                             ('nil 0)
+                             (t inp))))
+            (incf sum value)))
+    sum))
 
 (defmethod clear-inputs ((n neuron))
   "Set the incoming connections to nil (marks them as not having fired yet),
@@ -56,14 +60,17 @@
 (defmethod all-inputs-recieved ((n neuron))
   "Find out if all inputs have been recieved or not. Non-recieved inputs will be
   nil. All inputs are reset to nil after a neuron has processed."
-  (if (neuron-is-node n)
-      (not (not (elt (neuron-inputs n) 0)))
-      (zerop (length (remove-if (lambda (c) (connection-output c))
-                                (neuron-inputs n))))))
+  (case (neuron-type n)
+        (:input
+          (not (not (elt (neuron-inputs n) 0))))
+        ((:output :neuron)
+         (zerop (length (remove-if (lambda (c) (connection-output c))
+                                   (neuron-inputs n)))))))
 
-(defun sig (sum)
+(defun sigmoid (sum)
   "Sigmoid function."
-  (let ((sig (/ 1 (+ 1 (exp (- (if (< sum 80) sum 80)))))))
+  (let* ((sum (max (min sum 80) -80))
+         (sig (/ 1 (+ 1 (exp (- sum))))))
     (if *neuron-sigmoid-negatives*
         (* 2 (- sig 1/2))
         sig)))
