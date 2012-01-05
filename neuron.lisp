@@ -6,7 +6,10 @@
    (output :accessor neuron-output :initform nil)
    (threshold :accessor neuron-threshold :initarg :threshold :initform 1/2)
    (has-run :accessor neuron-has-run :initform nil)
-   (type :accessor neuron-type :initarg :type :initform :neuron)))
+   (type :accessor neuron-type :initarg :type :initform :neuron))
+  (:documentation "The neuron class is a model of a single neuron. It sums its
+  weighted inputs and runs the amount through the activation function. to decide
+  whether or not to fire."))
 
 (defmethod create-neuron (&key (type :neuron) (threshold 1/2))
   (make-instance 'neuron :type type :threshold threshold))
@@ -21,9 +24,12 @@
             (setf (neuron-output n) (connection-output (elt (neuron-inputs n) 0))))
           (:neuron
             ;; regular neuron, sum up and threshold the inputs
-            (let ((result (sigmoid (sum-inputs n))))
-              (if (< (neuron-threshold n) result)
-                  (setf (neuron-output n) (if *neuron-binary-output* 1 result))
+            (let* ((sig (sigmoid (sum-inputs n)))
+                   (sig (if *neuron-abs-sigmoid*
+                               (abs sig)
+                               sig)))
+              (if (< (neuron-threshold n) sig)
+                  (setf (neuron-output n) (if *neuron-binary-output* 1 sig))
                   (setf (neuron-output n) 0)))))
     ;; neuron ran, mark it as such
     (setf (neuron-has-run n) t)
@@ -67,11 +73,12 @@
          (zerop (length (remove-if (lambda (c) (connection-output c))
                                    (neuron-inputs n)))))))
 
-(defun sigmoid (sum)
+(defun sigmoid (sum &key (max-sum 80) (slope *neuron-sigmoid-slope*))
   "Sigmoid function."
-  (let* ((sum (max (min sum 80) -80))
+  (let* ((sum (max (min (* sum slope) max-sum) (- max-sum)))
          (sig (/ 1 (+ 1 (exp (- sum))))))
-    (if *neuron-sigmoid-negatives*
-        (* 2 (- sig 1/2))
-        sig)))
+    (* (if *neuron-sigmoid-negatives*
+           (* 2 (- sig 1/2))
+           sig)
+       *neuron-sigmoid-multiplier*)))
 

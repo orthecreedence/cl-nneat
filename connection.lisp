@@ -4,11 +4,19 @@
   ((from :accessor connection-from :initarg :from :initform nil)
    (to :accessor connection-to :initarg :to :initform nil)
    (weight :accessor connection-weight :initarg :weight :initform 1)
-   (output :accessor connection-output :initarg :output :initform 0)))
+   (output :accessor connection-output :initarg :output :initform 0))
+  (:documentation "The conncetion class defines a connection betwenn two neurons
+  and handles the passing of values between them. A connection also holds a
+  weight value, which is multipled by its input when the neuron is summing
+  inputs (the weight lives in the connection, not the neuron)."))
 
+;; An input or output neuron can only have one ougoing/incoming (respectively)
+;; connection since they are pass-thru and do no summing.
 (define-condition node-neuron-multiple-connections (error)
   ((text :initarg :text :reader text)))
 
+;; A neuron must have at least one outoing connection and one incoming
+;; connection.
 (define-condition connection-is-required (error)
   ((text :initarg :text :reader :text)))
 
@@ -61,17 +69,6 @@
     (dolist (c found-connections)
       (remove-connection c)
       (unless remove-all (return)))))
-
-(defmethod split-connection---dep ((c connection) (n neuron))
-  "Split a connection an put a neuron between the new parts, wiring everything
-  back up as it was before. Also preserves the weight value for both of the new
-  connections."
-  (let ((weight (connection-weight c))
-        (old-from (connection-from c))
-        (old-to (connection-to c)))
-    (remove-connection c)
-    (values (create-connection old-from n :weight weight)
-            (create-connection n old-to :weight weight))))
 
 (defmethod activate-connection ((c connection) (value number) &key (propagate t))
   "Take the output of a neuron that fired (or didn't) and enter is as the input

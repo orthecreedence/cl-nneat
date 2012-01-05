@@ -1,11 +1,13 @@
 (in-package :nneat)
 
 (defclass genome ()
-  ((genes :accessor genome-genes :initarg :genes :initform (make-array 0 :fill-pointer t :adjustable t))))
+  ((genes :accessor genome-genes :initarg :genes :initform (make-array 0 :fill-pointer t :adjustable t)))
+  (:documentation "A genome defines a sequential set of instructions for
+   building a network from scratch. Genomes can be crossed-over and mutated,
+   and the resulting genomes can be turned back into a network."))
 
 (defmethod add-gene ((genome genome) (gene list))
   "Add a gene to the genome."
-  ;(format t "adding gene: ~a ~%" gene)
   (vector-push-extend gene (genome-genes genome)))
 
 (defmethod get-object-in-genome ((genome genome) (id number))
@@ -68,9 +70,14 @@
                   (probability (cadr prob)))
               (incf test-sum probability)
               (when (< rand test-sum)
-                (return-from :do-mutate 
-                             (values action
-                                     (do-mutate net action)))))))
+                ;; define a handler in case mutate fails (trying to remove a 
+                ;; required connection, etc) so the next operation can be
+                ;; performed.
+                (handler-case
+                  (return-from :do-mutate 
+                               (values action
+                                       (do-mutate net action)))
+                  (error () nil))))))
       (values net action id))))
 
 (defmethod do-mutate (net (action keyword))

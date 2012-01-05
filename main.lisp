@@ -1,21 +1,6 @@
-(dolist (p '())
-  (ql:quickload p))
-
 (defpackage :nneat
   (:use :cl :cl-user))
 (in-package :nneat)
-
-(load "config")
-(load "util")
-(load "base")
-(load "neuron")
-(load "connection")
-(load "genome")
-(load "net")
-
-(setf net (create-basic-net :inputs 3 :outputs 1))
-(modify-net net :split-connection (get-object-in-genome (net-genome net) 8)
-                                  (create-neuron))
 
 #|
 (defparameter *x* 300)

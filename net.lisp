@@ -4,7 +4,8 @@
   ((inputs :accessor net-inputs :initform nil)
    (outputs :accessor net-outputs :initform nil)
    (genome :accessor net-genome :initform nil)
-   (ids :accessor net-ids :initform 0)))
+   (ids :accessor net-ids :initform 0))
+  (:documentation "Creates an interface for a neural network of arbitrary size and structure."))
 
 (defun create-basic-net (&key (inputs 1) (outputs 1))
   "Create a basic network consisting of one neuron with the specified number of
@@ -23,6 +24,38 @@
           (push output (net-outputs net))))
       (values net
               neuron))))
+
+(defmethod create-net-from-genome ((genome genome))
+  "Create a network solely based off of the given genome. Starts off with a bare
+  network and runs all encoded genes in order to create the final net. Any
+  created objects (neurons, connections) are newly instantiated and not taken
+  from the genome itself, essentially creating a copy instead of a reference."
+  (let* ((net (make-instance 'net))
+         (genes (progn (setf (net-genome net) (make-instance 'genome)) (net-genome net))))
+    (loop for gene across (genome-genes genome) do
+      (let ((action (getf gene :action))
+            (id (getf gene :id))
+            (meta (getf gene :meta)))
+        (case action
+              (:create-neuron
+                (let ((neuron (apply #'modify-net (append (list net :create-neuron) meta)))
+                      (type (getf meta :type)))
+                  (case type (:input
+                               (push neuron (net-inputs net)))
+                             (:output
+                               (push neuron (net-outputs net))))))
+              (:create-connection
+                (apply #'modify-net (append (list net
+                                                  :create-connection
+                                                  (get-object-in-genome genes (getf meta :from))
+                                                  (get-object-in-genome genes (getf meta :to)))
+                                            (remprops meta '(:from :to)))))
+              (:remove-connection
+                (apply #'modify-net (append (list net
+                                                  :remove-connection
+                                                  (get-object-in-genome genes id))
+                                            (remprops meta '(:from :to))))))))
+    net))
 
 (defmethod run-net ((n net) (inputs list))
   "Set the network inputs and run the net recursively, returning all outputs as
@@ -113,30 +146,3 @@
             nil))
     obj))
 
-(defmethod create-net-from-genome ((genome genome))
-  (let* ((net (make-instance 'net))
-         (genes (progn (setf (net-genome net) (make-instance 'genome)) (net-genome net))))
-    (loop for gene across (genome-genes genome) do
-      (let ((action (getf gene :action))
-            (id (getf gene :id))
-            (meta (getf gene :meta)))
-        (case action
-              (:create-neuron
-                (let ((neuron (apply #'modify-net (append (list net :create-neuron) meta)))
-                      (type (getf meta :type)))
-                  (case type (:input
-                               (push neuron (net-inputs net)))
-                             (:output
-                               (push neuron (net-outputs net))))))
-              (:create-connection
-                (apply #'modify-net (append (list net
-                                                  :create-connection
-                                                  (get-object-in-genome genes (getf meta :from))
-                                                  (get-object-in-genome genes (getf meta :to)))
-                                            (remprops meta '(:from :to)))))
-              (:remove-connection
-                (apply #'modify-net (append (list net
-                                                  :remove-connection
-                                                  (get-object-in-genome genes id))
-                                            (remprops meta '(:from :to))))))))
-    net))
