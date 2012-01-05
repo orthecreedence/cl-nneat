@@ -49,7 +49,8 @@
             (meta (getf gene :meta)))
         (case action
               (:create-neuron
-                (let ((neuron (apply #'modify-net (append (list net :create-neuron) meta)))
+                (let ((neuron (apply #'modify-net (append (list net :create-neuron)
+                                                          meta)))
                       (type (getf meta :type)))
                   (case type (:input
                                (push neuron (net-inputs net)))

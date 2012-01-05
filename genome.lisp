@@ -108,7 +108,8 @@
                   (return-from :do-mutate 
                                (values action
                                        (do-mutate net action)))
-                  (error () nil))))))
+                  (error (err)
+                    (format t "Mutation error occured, action: ~a, error: ~a~%" action err)))))))
       (values net action id))))
 
 (defmethod do-mutate (net (action keyword))
@@ -157,7 +158,7 @@
                             (- (random (* 2 *connection-weight-mutate-max*))
                                *connection-weight-mutate-max*))
                       ;; if negatives weights aren't allowed, enforce here
-                      (unless *connection-negative-weights*
+                      (unless *connection-allow-negative-weights*
                         (setf (connection-weight connection)
                               (max 0 (connection-weight connection))))
                       ;; make sure the weight isn't exceeding its maximum(s)

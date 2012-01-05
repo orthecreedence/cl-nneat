@@ -48,11 +48,11 @@
   "When :mutate-neuron-threshold is selected, this defines how much, up or down,
   the selected neuron's threshold can be mutated.")
 (defvar *mutate-probabilities* '(;:create-neuron 0
-                                       :create-connection 1
-                                       :split-connection 1
-                                       :remove-connection 1
-                                       :mutate-connection-weight 10
-                                       :mutate-neuron-threshold 10)
+                                 :create-connection 1
+                                 :split-connection 1
+                                 :remove-connection 1
+                                 :mutate-connection-weight 10
+                                 :mutate-neuron-threshold 10)
   "Defines a property list for each mutation type and its likelyhood of occuring
   when a mutation happens. The probabilties are relative, so the actual values
   are not as important as their ratio to each other.")

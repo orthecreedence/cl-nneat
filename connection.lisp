@@ -37,10 +37,10 @@
                                    :from from
                                    :to to
                                    :output initial-value
-                                   :weight (let ((weight (random *connection-weight-initial-value*)))
-                                             (if *connection-allow-negative-weights*
-                                                 (* weight (1- (* 2 (random 2))))
-                                                 weight)))))
+                                   :weight (or weight (let ((weight (random *connection-weight-initial-max*)))
+                                                        (if *connection-allow-negative-weights*
+                                                            (* weight (1- (* 2 (random 2))))
+                                                            weight))))))
     (when to
       (vector-push-extend connection (neuron-inputs to)))
     (when from
