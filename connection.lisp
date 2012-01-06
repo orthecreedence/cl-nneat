@@ -27,10 +27,8 @@
 
 (defun create-connection (from to &key weight (initial-value 0))
   "Given two neurons, set up connections between them."
-  (when (or (and (eql (neuron-type from) :output)
-                 (< 0 (length (neuron-outputs from))))
-            (and (eql (neuron-type to) :input)
-                 (< 0 (length (neuron-inputs to)))))
+  (when (and (eql (neuron-type to) :input)
+             (< 0 (length (neuron-inputs to))))
     (error 'node-neuron-multiple-connections
            :text "A node neuron can only have one incoming/outgoing connection"))
   (let ((connection (make-instance 'connection

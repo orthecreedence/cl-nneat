@@ -3,11 +3,11 @@
 ;;; resulting values. The inputs/outputs are of type 'connection, which is where
 ;;; the weight values live.
 ;;;
-;;; There are three types of neurons: :input :output :neuron. :input and :output
-;;; provide no mathematical processesing, and must have ONLY ONE output and
-;;; input (repectively). :neuron is the normal neuron type, provides sigmoid 
-;;; summation and processing, and can have an arbitrary number of incoming/
-;;; outgoing connections (it can even connect to itself).
+;;; There are three types of neurons: :input :output :neuron. :input provides
+;;; no mathematical processesing, and must have ONLY ONE output. :output and
+;;; :neuron are normal neuron types, provides sigmoid summation and processing.
+;;; :output cannot have any outgoing connections, whereas :neuron can have an
+;;; arbitrary number of incoming/outgoing connections (it can even connect to itself).
 
 (in-package :nneat)
 
@@ -31,9 +31,7 @@
     (case (neuron-type n)
           (:input
             (setf (neuron-output n) (elt (neuron-inputs n) 0)))
-          (:output
-            (setf (neuron-output n) (connection-output (elt (neuron-inputs n) 0))))
-          (:neuron
+          ((:neuron :output)
             ;; regular neuron, sum up and threshold the inputs
             (let* ((sig (sigmoid (sum-inputs n)))
                    (sig (if *neuron-abs-sigmoid*

@@ -95,7 +95,7 @@
          (rand (random prob-sum))
          (test-sum 0))
     (multiple-value-bind (action id)
-        (block :do-mutate
+        (block do-mutate
           (dolist (prob probs)
             (let ((action (car prob))
                   (probability (cadr prob)))
@@ -105,14 +105,14 @@
                 ;; required connection, etc) so the next operation can be
                 ;; performed.
                 (handler-case
-                  (return-from :do-mutate 
+                  (return-from do-mutate 
                                (values action
                                        (do-mutate net action)))
                   (error (err)
                     (format t "Mutation error occured, action: ~a, error: ~a~%" action err)))))))
       (values net action id))))
 
-(defmethod do-mutate (net (action keyword))
+(defmethod do-mutate (net action)
   "Perform mutation on a network. Does its best to follow all given genetic
   rules, but does no work to catch errors. This must be done by the caller.
   This returns the id of whatever object was operated on."
@@ -123,15 +123,18 @@
         ;  (id (modify-net net :create-neuron)))
 
         ;; create a new connection. new connections are only allowed to connect
-        ;; non-input/output neurons to other non-input/output neurons.
+        ;; non-input/output neurons to non-input neurons.
         (:create-connection
-          (let ((neurons nil))
+          (let ((neurons-from nil)
+                (neurons-to nil))
             ;; grab all eligible neurons
-            (traverse-net net (lambda (n) (when (eql (neuron-type n) :neuron)
-                                            (push n neurons))))
+            (traverse-net net (lambda (n) (when (not (eql (neuron-type n) :input))
+                                            (push n neurons-to))
+                                          (when (eql (neuron-type n) :neuron)
+                                            (push n neurons-from))))
             ;; pick two random neurons from the eligible pool and connect them
-            (let ((n1 (nth (random (length neurons)) neurons))
-                  (n2 (nth (random (length neurons)) neurons)))
+            (let ((n1 (nth (random (length neurons-from)) neurons-from))
+                  (n2 (nth (random (length neurons-to)) neurons-to)))
               (id (modify-net net :create-connection n1 n2)))))
 
         ;; split an existing connection, or mutate a connection weight
@@ -183,10 +186,10 @@
             (traverse-net net (lambda (n)
                                 (when (eql (neuron-type n) :neuron)
                                   (loop for c across (neuron-inputs n) do
-                                        (unless (eql (neuron-type (connection-from c)) :input)
+                                        (unless (contains connections c)
                                           (push c connections)))
-                                  (loop for c in (neuron-outputs n) do
-                                        (unless (eql (neuron-type (connection-to c)) :output)
+                                  (loop for c across (neuron-outputs n) do
+                                        (unless (contains connections c)
                                           (push c connections))))))
             ;; pick a connection and modify it
             (let ((connection (nth (random (length connections)) connections)))
@@ -196,8 +199,8 @@
         ;; mutate the threshold value of a neuron. 
         (:mutate-neuron-threshold
           (let ((neurons nil))
-            ;; grab all neurons
-            (traverse-net net (lambda (n) (when (eql (neuron-type n) :neuron)
+            ;; grab all neurons/outputs
+            (traverse-net net (lambda (n) (when (not (eql (neuron-type n) :input))
                                             (push n neurons))))
             ;; pick a random neuron and modify its threshold
             (let ((neuron (nth (random (length neurons)) neurons)))

@@ -18,23 +18,25 @@
    (ids :accessor net-ids :initform 0))
   (:documentation "Creates an interface for a neural network of arbitrary size and structure."))
 
-(defun create-basic-net (&key (inputs 1) (outputs 1))
+(defun create-basic-net (&key (inputs 1) (outputs 1) (hidden 1))
   "Create a basic network consisting of one neuron with the specified number of
   inputs and outputs. No structure, no funny stuff."
   (let ((net (make-instance 'net)))
     (setf (net-genome net) (make-instance 'genome))
-    (let ((neuron (modify-net net :create-neuron)))
+    (let ((neurons (loop for x from 1 to hidden collect (modify-net net :create-neuron))))
       (dotimes (i inputs)
         (let ((input (modify-net net :create-neuron :type :input)))
           (setf (neuron-inputs input) (make-array 1 :adjustable t :fill-pointer 1))
-          (modify-net net :create-connection input neuron :initial-value nil)
+          (dolist (n neurons)
+            (modify-net net :create-connection input n :initial-value nil))
           (push input (net-inputs net))))
       (dotimes (i outputs)
         (let ((output (modify-net net :create-neuron :type :output)))
-          (modify-net net :create-connection neuron output :initial-value nil)
+          (dolist (n neurons)
+            (modify-net net :create-connection n output :initial-value nil))
           (push output (net-outputs net))))
       (values net
-              neuron))))
+              neurons))))
 
 (defmethod create-net-from-genome ((genome genome))
   "Create a network solely based off of the given genome. Starts off with a bare
@@ -101,7 +103,7 @@
   "Grab the next available id from this network for assignment to an object."
   (1- (incf (net-ids net))))
 
-(defmethod modify-net ((net net) (action keyword) &rest args)
+(defmethod modify-net ((net net) action &rest args)
   "This method is the bread and butter of the network. It allows the network's
   structure to be morphed and grown/shrunk, but tracks all actions that happen
   to the network sequentially using the network's genome.
