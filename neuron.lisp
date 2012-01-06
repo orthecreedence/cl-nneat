@@ -23,7 +23,11 @@
   whether or not to fire."))
 
 (defmethod create-neuron (&key (type :neuron) (threshold 1/2))
-  (make-instance 'neuron :type type :threshold threshold))
+  "Wrapper around neuron creation."
+  (let ((neuron (make-instance 'neuron :type type :threshold threshold)))
+    (when (eql type :input)
+      (setf (neuron-inputs neuron) (make-array 1 :adjustable t :fill-pointer 1)))
+    neuron))
 
 (defmethod run-neuron ((n neuron) &key (propagate t))
   "Take this neuron's inputs and calculate the output value."
@@ -37,6 +41,7 @@
                    (sig (if *neuron-abs-sigmoid*
                                (abs sig)
                                sig)))
+              (format t "~a(id:~a) with sig: ~a~%" (neuron-type n) (id n) sig)
               (if (< (neuron-threshold n) sig)
                   (setf (neuron-output n) (if *neuron-binary-output* 1 sig))
                   (setf (neuron-output n) 0)))))

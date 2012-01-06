@@ -2,6 +2,7 @@
   (:use :cl :cl-user)
   (:export ;; network exports
            #:net
+           #:net-genome
            #:create-basic-net
            #:create-net-from-genome
            #:run-net

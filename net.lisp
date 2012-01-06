@@ -136,7 +136,8 @@
               (let ((connection (create-with-id #'create-connection args)))
                 (setf obj-meta (list :from (id (connection-from connection))
                                      :to (id (connection-to connection))
-                                     :weight (connection-weight connection)))))
+                                     :weight (connection-weight connection)
+                                     :initial-value (connection-output connection)))))
             (:remove-connection
               (let ((connection (car args)))
                 (setf obj-id (id connection))

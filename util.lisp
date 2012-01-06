@@ -60,7 +60,7 @@
   (traverse-net
     (create-net-from-genome (net-genome net))
     (lambda (n)
-      (format t "~a(id:~a)~%" (neuron-type n) (id n))
+      (format t "~a (id: ~a, thresh: ~a)~%" (neuron-type n) (id n) (neuron-threshold n))
       (unless (eql (neuron-type n) :input)
         (format t "   inp:~%")
         (loop for inp across (neuron-inputs n) do
