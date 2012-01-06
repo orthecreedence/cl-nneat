@@ -26,6 +26,10 @@
 (defvar *neuron-binary-output* nil
   "When set to true, a neuron may only output 1 (fired) or 0 (didn't fire). If
   nil, a neuron will output whatever its sigmoidal sum is.")
+(defvar *neuron-output-passthrough* t
+  "When true, an output neuron will always set its output to the final sigmoid,
+  regardless of whether over the threshold or not (this effectively makes all
+  output neurons have a threshold of 0).")
 
 ;; connection defines
 (defvar *connection-allow-negative-weights* nil

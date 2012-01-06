@@ -22,7 +22,7 @@
   weighted inputs and runs the amount through the activation function. to decide
   whether or not to fire."))
 
-(defmethod create-neuron (&key (type :neuron) (threshold 1/2))
+(defmethod create-neuron (&key (type :neuron) (threshold *neuron-default-threshold*))
   "Wrapper around neuron creation."
   (let ((neuron (make-instance 'neuron :type type :threshold threshold)))
     (when (eql type :input)
@@ -41,7 +41,9 @@
                    (sig (if *neuron-abs-sigmoid*
                                (abs sig)
                                sig)))
-              (if (< (neuron-threshold n) sig)
+              (if (or (< (neuron-threshold n) sig)
+                      (and (eql (neuron-type n) :output)
+                           *neuron-output-passthrough*))
                   (setf (neuron-output n) (if *neuron-binary-output* 1 sig))
                   (setf (neuron-output n) 0)))))
     ;; neuron ran, mark it as such
@@ -59,10 +61,10 @@
   "Given a neuron, grab all the values from its inputs and return the sum."
   (let ((sum 0))
     (loop for inp across (neuron-inputs n) do
-          (let ((value (case (type-of inp)
-                             (connection (connection-output inp))
-                             ('nil 0)
-                             (t inp))))
+          (let ((value (case (type-of inp) (connection (connection-output inp))
+                                           ('nil 0)
+                                           (t inp))))
+            (format t "neuron ~a here, summing value ~a~%" (id n) value)
             (incf sum value)))
     sum))
 
