@@ -64,7 +64,6 @@
           (let ((value (case (type-of inp) (connection (connection-output inp))
                                            ('nil 0)
                                            (t inp))))
-            (format t "neuron ~a here, summing value ~a~%" (id n) value)
             (incf sum value)))
     sum))
 
