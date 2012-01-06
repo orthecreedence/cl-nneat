@@ -184,11 +184,8 @@
           (let ((connections nil))
             ;; grab a list of eligible connections
             (traverse-net net (lambda (n)
-                                (when (eql (neuron-type n) :neuron)
+                                (unless (eql (neuron-type n) :input)
                                   (loop for c across (neuron-inputs n) do
-                                        (unless (contains connections c)
-                                          (push c connections)))
-                                  (loop for c across (neuron-outputs n) do
                                         (unless (contains connections c)
                                           (push c connections))))))
             ;; pick a connection and modify it
