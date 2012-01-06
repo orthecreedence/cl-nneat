@@ -41,7 +41,6 @@
                    (sig (if *neuron-abs-sigmoid*
                                (abs sig)
                                sig)))
-              (format t "~a(id:~a) with sig: ~a~%" (neuron-type n) (id n) sig)
               (if (< (neuron-threshold n) sig)
                   (setf (neuron-output n) (if *neuron-binary-output* 1 sig))
                   (setf (neuron-output n) 0)))))

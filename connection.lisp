@@ -88,7 +88,6 @@
   (let ((neuron (connection-to c))
         (output (* (connection-weight c) value)))
     (setf (connection-output c) output)
-    ;(format t "connection output (~a): ~a~%" c output)
     (when neuron
       (when (and propagate
                  (not (neuron-has-run neuron)))
