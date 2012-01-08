@@ -37,11 +37,9 @@
             (setf (neuron-output n) (elt (neuron-inputs n) 0)))
           ((:neuron :output)
             ;; regular neuron, sum up and threshold the inputs
-            (let* ((sig (sigmoid (sum-inputs n)))
-                   (sig (if *neuron-abs-sigmoid*
-                               (abs sig)
-                               sig)))
-              (if (or (< (neuron-threshold n) sig)
+            (let* ((sig (sigmoid (sum-inputs n))))
+              (if (or *neuron-always-output*
+                      (< (neuron-threshold n) sig)
                       (and (eql (neuron-type n) :output)
                            *neuron-output-passthrough*))
                   (setf (neuron-output n) (if *neuron-binary-output* 1 sig))
@@ -72,11 +70,12 @@
   which allows the neuron to track whether it should fire or not."
   (let* ((inputs (neuron-inputs n))
          (num-inputs (length inputs)))
-    (dotimes (i num-inputs)
-      (cond ((numberp (elt inputs i))
-             (setf (elt inputs i) nil))
-            ((eql (type-of (elt inputs i)) 'connection)
-             (setf (connection-output (elt inputs i)) nil))))))
+    (if (eql (neuron-type n) :input)
+        ;; just set to nil for input neurons
+        (loop for i from 0 to (1- num-inputs) do (setf (elt inputs i) nil))
+        ;; for all others, set the actual connection value to nil.
+        (loop for inp across inputs do
+              (setf (connection-output inp) nil)))))
 
 (defmethod all-inputs-recieved ((n neuron))
   "Find out if all inputs have been recieved or not. Non-recieved inputs will be

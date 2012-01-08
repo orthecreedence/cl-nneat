@@ -78,8 +78,7 @@
         for input-neuron in (net-inputs n) do
         (setf (elt (neuron-inputs input-neuron) 0) value)
         (run-neuron input-neuron))
-  (traverse-net n (lambda (neuron)
-                    (setf (neuron-has-run neuron) nil)))
+  (traverse-net n (lambda (neuron) (setf (neuron-has-run neuron) nil)))
   (mapcar (lambda (output) (neuron-output output)) (net-outputs n)))
 
 (defmethod traverse-net ((net net) (fn function) &key (avoid-duplicates t))

@@ -22,6 +22,7 @@
            
            ;; genome exports
            #:genome
+           #:genome-genes
            #:crossover
            #:mutate
 
@@ -29,9 +30,9 @@
            #:*neuron-sigmoid-negatives*
            #:*neuron-sigmoid-slope*
            #:*neuron-sigmoid-multiplier*
-           #:*neuron-abs-sigmoid*
            #:*neuron-default-threshold*
            #:*neuron-binary-output*
+           #:*neuron-always-output*
            #:*neuron-threshold-mutate-max*
            #:*connection-allow-negative-weights*
            #:*connection-weight-initial-max*

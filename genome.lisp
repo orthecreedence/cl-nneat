@@ -43,7 +43,7 @@
                t)
         nil)))
 
-(defmethod crossover ((mom-genome genome) (dad-genome genome) &key position)
+(defmethod crossover ((mom-genome genome) (dad-genome genome) &key position probability)
   "Run the genetic crossover function on two genomes. This specific version
   finds the mid-point of the shortest genome, and swaps the genes after it with
   the paired genome. For ex:
@@ -60,26 +60,32 @@
 
   Note that these are not what real genomes look like, this is just a functional
   example."
-  (let* ((mom (genome-genes mom-genome))
-         (dad (genome-genes dad-genome))
-         (length-mom (length mom))
-         (length-dad (length dad))
-         (position (or position
-                       (/ (min length-mom length-dad) 2))))
-    (let ((newmom (make-array 0 :fill-pointer t :adjustable t))
-          (newdad (make-array 0 :fill-pointer t :adjustable t)))
-      (dotimes (i (max length-mom length-dad))
-        (let ((gene-m (if (< i length-mom)
-                          (elt mom i)))
-              (gene-d (if (< i length-dad)
-                          (elt dad i))))
-          (if (< i position)
-              (progn (unless (null gene-m) (vector-push-extend gene-m newmom))
-                     (unless (null gene-d) (vector-push-extend gene-d newdad)))
-              (progn (unless (null gene-m) (vector-push-extend gene-m newdad))
-                     (unless (null gene-d) (vector-push-extend gene-d newmom))))))
-      (values (make-instance 'genome :genes newmom)
-              (make-instance 'genome :genes newdad)))))
+  (if (< (random 1.0) (or probability 2))
+    ;; do crossover
+    (let* ((mom (genome-genes mom-genome))
+           (dad (genome-genes dad-genome))
+           (length-mom (length mom))
+           (length-dad (length dad))
+           (position (or position
+                         (/ (min length-mom length-dad) 2))))
+      (let ((newmom (make-array 0 :fill-pointer t :adjustable t))
+            (newdad (make-array 0 :fill-pointer t :adjustable t)))
+        (dotimes (i (max length-mom length-dad))
+          (let ((gene-m (if (< i length-mom)
+                            (elt mom i)))
+                (gene-d (if (< i length-dad)
+                            (elt dad i))))
+            (if (< i position)
+                (progn (unless (null gene-m) (vector-push-extend gene-m newmom))
+                       (unless (null gene-d) (vector-push-extend gene-d newdad)))
+                (progn (unless (null gene-m) (vector-push-extend gene-m newdad))
+                       (unless (null gene-d) (vector-push-extend gene-d newmom))))))
+        (values (make-instance 'genome :genes newmom)
+                (make-instance 'genome :genes newdad))))
+    ;; no crossover occured, copy children directly
+    (values mom-genome
+            dad-genome)))
+   
 
 (defmethod mutate (net &key (probabilities *mutate-probabilities*))
   "Out of the given possible actions (and their probabilities of occuring) in

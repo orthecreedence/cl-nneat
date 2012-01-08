@@ -14,18 +14,15 @@
   "Maximum value of the sigmoid output. This can be adjusted to fit your data,
   although it's mostly arbitrary and you'll get better results changing this in
   conjuction with *neuron-default-threshold*")
-(defvar *neuron-abs-sigmoid* nil
-  "Whether or not to (abs ...) the sigmoid value after processing. Doing this
-  allows a neuron to have a negative activation value and still fire:
-    (< threshold (abs sig))
-  might turn out to be
-    (< 0.5 (abs -2))")
 (defvar *neuron-default-threshold* 1/2
   "The initial threshold value for a new neuron (may be modified by mutation as
   the net progresses).")
 (defvar *neuron-binary-output* nil
   "When set to true, a neuron may only output 1 (fired) or 0 (didn't fire). If
   nil, a neuron will output whatever its sigmoidal sum is.")
+(defvar *neuron-always-output* t
+  "When set to true, neurons don't fire per-se, but instead pass along their
+  activation value to the next neurons in line.")
 (defvar *neuron-output-passthrough* t
   "When true, an output neuron will always set its output to the final sigmoid,
   regardless of whether over the threshold or not (this effectively makes all
