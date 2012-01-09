@@ -47,7 +47,7 @@
                          (when *dynamic-neuron-self-govern* 
                            (incf (neuron-stimulate n))))
                   (progn (setf (neuron-output n) 0)
-                         (when *dynamic-neuron-self-goven*
+                         (when *dynamic-neuron-self-govern*
                            (decf (neuron-stimulate n))))))))
     (when (and *dynamic-neuron*
                (not (eql (neuron-type n) :input))
