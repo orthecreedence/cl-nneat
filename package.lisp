@@ -6,6 +6,7 @@
            #:create-basic-net
            #:create-net-from-genome
            #:run-net
+           #:stimulate-net
            #:traverse-net
            #:modify-net
            #:print-net
@@ -33,6 +34,11 @@
            #:*neuron-default-threshold*
            #:*neuron-binary-output*
            #:*neuron-always-output*
+           #:*neuron-output-passthrough* 
+           #:*dynamic-neuron*
+           #:*dynamic-neuron-self-govern*
+           #:*dynamic-neuron-threshold-delta*
+           #:*dynamic-neuron-weight-delta*
            #:*neuron-threshold-mutate-max*
            #:*connection-allow-negative-weights*
            #:*connection-weight-initial-max*

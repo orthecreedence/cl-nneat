@@ -27,6 +27,19 @@
   "When true, an output neuron will always set its output to the final sigmoid,
   regardless of whether over the threshold or not (this effectively makes all
   output neurons have a threshold of 0).")
+(defvar *dynamic-neuron* nil
+  "When true, neurons will strengthen/weaken their threshold and connection
+  weights depending on external stimulus given (can be thought of as pleasure/
+  pain).")
+(defvar *dynamic-neuron-self-govern* nil
+  "When true, a neuron can stimulate/depress itself instead of relying on an
+  external influence.")
+(defvar *dynamic-neuron-threshold-delta* 1.1
+  "When stimulating a dynamic neuron, threshold will be multiplied byt this
+  amount. When depressing, threshold will be multiplied 1 / this amount.")
+(defvar *dynamic-neuron-weight-delta* 1.01
+  "When stimulating a dynamic neuron, weights will be multiplied by this amount.
+  If depressing a neuron, weights will be multiplied 1 / this value.")
 
 ;; connection defines
 (defvar *connection-allow-negative-weights* nil

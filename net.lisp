@@ -81,6 +81,10 @@
   (traverse-net n (lambda (neuron) (setf (neuron-has-run neuron) nil)))
   (mapcar (lambda (output) (neuron-output output)) (net-outputs n)))
 
+(defmethod stimulate-net ((net net) amount)
+  "Stimulate an antire network by a positive (or negative) amount."
+  (traverse-net net (lambda (n) (setf (neuron-stimulate n) amount))))
+
 (defmethod traverse-net ((net net) (fn function) &key (avoid-duplicates t))
   "Run a function on each neuron in the given network (in no particular order,
   and once per neuron)."

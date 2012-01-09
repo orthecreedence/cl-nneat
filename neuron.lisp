@@ -17,7 +17,8 @@
    (output :accessor neuron-output :initform nil)
    (threshold :accessor neuron-threshold :initarg :threshold :initform *neuron-default-threshold*)
    (has-run :accessor neuron-has-run :initform nil)
-   (type :accessor neuron-type :initarg :type :initform :neuron))
+   (type :accessor neuron-type :initarg :type :initform :neuron)
+   (stimulate :accessor neuron-stimulate :initform 0))
   (:documentation "The neuron class is a model of a single neuron. It sums its
   weighted inputs and runs the amount through the activation function. to decide
   whether or not to fire."))
@@ -42,8 +43,24 @@
                       (< (neuron-threshold n) sig)
                       (and (eql (neuron-type n) :output)
                            *neuron-output-passthrough*))
-                  (setf (neuron-output n) (if *neuron-binary-output* 1 sig))
-                  (setf (neuron-output n) 0)))))
+                  (progn (setf (neuron-output n) (if *neuron-binary-output* 1 sig))
+                         (when *dynamic-neuron-self-govern* 
+                           (incf (neuron-stimulate n))))
+                  (progn (setf (neuron-output n) 0)
+                         (when *dynamic-neuron-self-goven*
+                           (decf (neuron-stimulate n))))))))
+    (when (and *dynamic-neuron*
+               (not (eql (neuron-type n) :input))
+               (not (zerop (neuron-stimulate n))))
+      (let* ((stimulate (if (< 0 (neuron-stimulate n)) t nil))
+             (threshold-enforce (if stimulate *dynamic-neuron-threshold-delta* (/ 1 *dynamic-neuron-threshold-delta*)))
+             (weight-enforce (if stimulate *dynamic-neuron-weight-delta* (/ 1 *dynamic-neuron-weight-delta*))))
+        (setf (neuron-threshold n) (* (neuron-threshold n) threshold-enforce))
+        (loop for inp across (neuron-inputs n) do
+              (setf (connection-weight inp) (* (connection-weight inp) weight-enforce)))
+        (if stimulate
+            (decf (neuron-stimulate n))
+            (incf (neuron-stimulate n)))))
     ;; neuron ran, mark it as such
     (setf (neuron-has-run n) t)
     (clear-inputs n)
