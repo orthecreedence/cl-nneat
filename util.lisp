@@ -2,11 +2,18 @@
 
 (in-package :nneat)
 
-(defun contains (list value &key (test #'equal))
+(defun contains (sequence value &key (test #'equal))
   "Test if a value exists in the given list. Default test is #'equal"
-  (not (not (find-if (lambda (item)
-                       (funcall test item value))
-                     list))))
+  (declare (optimize (speed 3) (safety 1))
+           (type sequence sequence)
+           (type function test))
+  (if (listp sequence)
+      (dolist (v sequence)
+        (when (funcall test v value)
+          (return-from contains t)))
+      (dolist (i (length sequence))
+        (when (funcall test (aref sequence i) value)
+          (return-from contains t)))))
 
 (defmacro appendf (append-to list-items)
   "Destructively appends one list to another."

@@ -23,93 +23,110 @@
   weighted inputs and runs the amount through the activation function. to decide
   whether or not to fire."))
 
-(defmethod create-neuron (&key (type :neuron) (threshold *neuron-default-threshold*))
+(defun create-neuron (&key (type :neuron) (threshold *neuron-default-threshold*))
   "Wrapper around neuron creation."
   (let ((neuron (make-instance 'neuron :type type :threshold threshold)))
     (when (eql type :input)
       (setf (neuron-inputs neuron) (make-array 1 :adjustable t :fill-pointer 1)))
     neuron))
 
-(defmethod run-neuron ((n neuron) &key (propagate t))
+(defun run-neuron (neuron &key (propagate t))
   "Take this neuron's inputs and calculate the output value."
-  (when (all-inputs-recieved n)
-    (case (neuron-type n)
+  (declare (optimize (speed 3) (safety 1))
+           (type neuron neuron )
+           (type boolean propagate))
+  (when (all-inputs-recieved neuron)
+    (case (neuron-type neuron)
           (:input
-            (setf (neuron-output n) (elt (neuron-inputs n) 0)))
+            (setf (neuron-output neuron) (aref (neuron-inputs neuron) 0)))
           ((:neuron :output)
             ;; regular neuron, sum up and threshold the inputs
-            (let* ((sig (sigmoid (sum-inputs n))))
+            (let* ((sig (sigmoid (sum-inputs neuron))))
               (if (or *neuron-always-output*
-                      (< (neuron-threshold n) sig)
-                      (and (eql (neuron-type n) :output)
+                      (< (neuron-threshold neuron) sig)
+                      (and (eql (neuron-type neuron) :output)
                            *neuron-output-passthrough*))
-                  (progn (setf (neuron-output n) (if *neuron-binary-output* 1 sig))
+                  (progn (setf (neuron-output neuron) (if *neuron-binary-output* 1 sig))
                          (when *dynamic-neuron-self-govern* 
-                           (incf (neuron-stimulate n))))
-                  (progn (setf (neuron-output n) 0)
+                           (incf (neuron-stimulate neuron))))
+                  (progn (setf (neuron-output neuron) 0)
                          (when *dynamic-neuron-self-govern*
-                           (decf (neuron-stimulate n))))))))
+                           (decf (neuron-stimulate neuron))))))))
     (when (and *dynamic-neuron*
-               (not (eql (neuron-type n) :input))
-               (not (zerop (neuron-stimulate n))))
-      (let* ((stimulate (if (< 0 (neuron-stimulate n)) t nil))
+               (not (eql (neuron-type neuron) :input))
+               (not (zerop (neuron-stimulate neuron))))
+      (let* ((stimulate (if (< 0 (neuron-stimulate neuron)) t nil))
              (threshold-enforce (if stimulate *dynamic-neuron-threshold-delta* (/ 1 *dynamic-neuron-threshold-delta*)))
              (weight-enforce (if stimulate *dynamic-neuron-weight-delta* (/ 1 *dynamic-neuron-weight-delta*))))
-        (setf (neuron-threshold n) (* (neuron-threshold n) threshold-enforce))
-        (loop for inp across (neuron-inputs n) do
+        (setf (neuron-threshold neuron) (* (neuron-threshold neuron) threshold-enforce))
+        (loop for inp across (neuron-inputs neuron) do
               (setf (connection-weight inp) (* (connection-weight inp) weight-enforce)))
         (if stimulate
-            (decf (neuron-stimulate n))
-            (incf (neuron-stimulate n)))))
+            (decf (neuron-stimulate neuron))
+            (incf (neuron-stimulate neuron)))))
     ;; neuron ran, mark it as such
-    (setf (neuron-has-run n) t)
-    (clear-inputs n)
+    (setf (neuron-has-run neuron) t)
+    (clear-inputs neuron)
     ;; push the output value to all outgoing connections
-    (run-outputs n :propagate propagate)))
+    (run-outputs neuron :propagate propagate)))
 
-(defmethod run-outputs ((n neuron) &key (propagate t))
+(defun run-outputs (neuron &key (propagate t))
   "Process all outgoing outputs for this neuron."
-  (dolist (c (neuron-outputs n))
-    (activate-connection c (neuron-output n) :propagate propagate)))
+  (declare (optimize (speed 3) (safety 1))
+           (type neuron neuron)
+           (type boolean propagate))
+  (dolist (c (neuron-outputs neuron))
+    (activate-connection c (neuron-output neuron) :propagate propagate)))
 
-(defmethod sum-inputs ((n neuron))
+(defun sum-inputs (neuron)
   "Given a neuron, grab all the values from its inputs and return the sum."
-  (let ((sum 0))
-    (loop for inp across (neuron-inputs n) do
-          (let ((value (case (type-of inp) (connection (connection-output inp))
-                                           ('nil 0)
-                                           (t inp))))
-            (incf sum value)))
+  (declare (optimize (speed 3) (safety 1))
+           (type neuron neuron))
+  (let ((sum 0)
+        (inputs (neuron-inputs neuron)))
+    (dotimes (i (length inputs))
+      (let ((inp (aref inputs i)))
+        (incf sum (case (type-of inp) (connection (connection-output inp))
+                                      ('nil 0)
+                                      (t inp)))))
     sum))
 
-(defmethod clear-inputs ((n neuron))
+(defun clear-inputs (neuron)
   "Set the incoming connections to nil (marks them as not having fired yet),
   which allows the neuron to track whether it should fire or not."
-  (let* ((inputs (neuron-inputs n))
+  (declare (optimize (speed 3) (safety 1))
+           (type neuron neuron))
+  (let* ((inputs (neuron-inputs neuron))
          (num-inputs (length inputs)))
-    (if (eql (neuron-type n) :input)
-        ;; just set to nil for input neurons
-        (loop for i from 0 to (1- num-inputs) do (setf (elt inputs i) nil))
-        ;; for all others, set the actual connection value to nil.
-        (loop for inp across inputs do
-              (setf (connection-output inp) nil)))))
+    (case (neuron-type neuron)
+          (:input
+            (loop for i from 0 to (1- num-inputs) do (setf (aref inputs i) nil)))
+          ((:output :neuron)
+           (dotimes (i (length inputs))
+             (setf (connection-output (aref inputs i)) nil))))))
 
-(defmethod all-inputs-recieved ((n neuron))
+(defun all-inputs-recieved (neuron)
   "Find out if all inputs have been recieved or not. Non-recieved inputs will be
   nil. All inputs are reset to nil after a neuron has processed."
-  (case (neuron-type n)
+  (declare (optimize (speed 3) (safety 1))
+           (type neuron neuron))
+  (case (neuron-type neuron)
         (:input
-          (not (not (elt (neuron-inputs n) 0))))
+          (when (aref (neuron-inputs neuron) 0) t))
         ((:output :neuron)
-         (zerop (length (remove-if (lambda (c) (connection-output c))
-                                   (neuron-inputs n)))))))
+         (let ((inputs (neuron-inputs neuron)))
+           (dotimes (i (length inputs))
+             (unless (connection-output (aref inputs i))
+               (return-from all-inputs-recieved nil)))
+           t))))
 
 (defun sigmoid (sum &key (max-sum 80) (slope *neuron-sigmoid-slope*))
   "Sigmoid function."
-  (let* ((sum (max (min (* sum slope) max-sum) (- max-sum)))
-         (sig (/ 1 (+ 1 (exp (- sum))))))
-    (* (if *neuron-sigmoid-negatives*
-           (* 2 (- sig 1/2))
-           sig)
-       *neuron-sigmoid-multiplier*)))
+  (declare (optimize (speed 3) (safety 1))
+           (type number sum)
+           (type number max-sum)
+           (type number slope))
+  (let* ((sum (max (min (* sum slope) max-sum) (- max-sum))))
+    (/ 1 (+ 1 (exp (- sum))))))
+
 

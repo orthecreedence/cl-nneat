@@ -38,7 +38,7 @@
       (values net
               neurons))))
 
-(defmethod create-net-from-genome ((genome genome))
+(defun create-net-from-genome (genome)
   "Create a network solely based off of the given genome. Starts off with a bare
   network and runs all encoded genes in order to create the final net. Any
   created objects (neurons, connections) are newly instantiated and not taken
@@ -71,42 +71,49 @@
                                             (remprops meta '(:from :to))))))))
     net))
 
-(defmethod run-net ((n net) (inputs list))
+(defun run-net (net inputs)
   "Set the network inputs and run the net recursively, returning all outputs as
   a list."
+  (declare (optimize (speed 3) (safety 1))
+           (type net net)
+           (type (cons number) inputs))
   (loop for value in inputs
-        for input-neuron in (net-inputs n) do
-        (setf (elt (neuron-inputs input-neuron) 0) value)
+        for input-neuron in (net-inputs net) do
+        (setf (aref (neuron-inputs input-neuron) 0) value)
         (run-neuron input-neuron))
-  (traverse-net n (lambda (neuron) (setf (neuron-has-run neuron) nil)))
-  (mapcar (lambda (output) (neuron-output output)) (net-outputs n)))
+  (traverse-net net (lambda (neuron) (setf (neuron-has-run neuron) nil)))
+  (mapcar (lambda (output) (neuron-output output)) (net-outputs net)))
 
-(defmethod stimulate-net ((net net) amount)
+(defun stimulate-net (net amount)
   "Stimulate an antire network by a positive (or negative) amount."
   (traverse-net net (lambda (n) (setf (neuron-stimulate n) amount))))
 
-(defmethod traverse-net ((net net) (fn function) &key (avoid-duplicates t))
+(defun traverse-net (net fn &key (avoid-duplicates t))
   "Run a function on each neuron in the given network (in no particular order,
   and once per neuron)."
+  (declare (optimize (speed 3) (safety 1))
+           (type net net)
+           (type function fn)
+           (type boolean avoid-duplicates))
   (let ((run-neurons nil))
-    (labels ((unique-neurons (connections)
-               (remove-duplicates (loop for c in connections collect (connection-to c))))
-             (do-traverse (neuron)
+    (labels ((do-traverse (neuron)
+               (declare (optimize (speed 3) (safety 1))
+                        (type neuron neuron))
                (unless (and avoid-duplicates
                             (contains run-neurons neuron))
                  (push neuron run-neurons)
                  (funcall fn neuron)
-                 (dolist (outgoing-neuron (unique-neurons (neuron-outputs neuron)))
-                   (when outgoing-neuron
-                     (do-traverse outgoing-neuron))))))
+                 (loop for outgoing-connection in (neuron-outputs neuron) do
+                   (when outgoing-connection
+                     (do-traverse (connection-to outgoing-connection)))))))
       (dolist (n (net-inputs net))
         (do-traverse n)))))
 
-(defmethod next-id ((net net))
+(defun next-id (net)
   "Grab the next available id from this network for assignment to an object."
   (1- (incf (net-ids net))))
 
-(defmethod modify-net ((net net) action &rest args)
+(defun modify-net (net action &rest args)
   "This method is the bread and butter of the network. It allows the network's
   structure to be morphed and grown/shrunk, but tracks all actions that happen
   to the network sequentially using the network's genome.

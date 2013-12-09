@@ -79,17 +79,21 @@
       (remove-connection c)
       (unless remove-all (return)))))
 
-(defmethod activate-connection ((c connection) (value number) &key (propagate t))
+(defun activate-connection (connection value &key (propagate t))
   "Take the output of a neuron that fired (or didn't) and enter it as the input
   to the connection's TO neuron in the correct slot. This function takes care of
   weighting the value value (inp * weight) before entering the input to the
   resulting neuron. It also calls run-neuron on its outgoing neuron connection
   if propagate is T."
-  (let ((neuron (connection-to c))
-        (output (* (connection-weight c) value)))
-    (setf (connection-output c) output)
+  (declare (optimize (speed 3) (safety 1))
+           (type connection connection)
+           (type number value)
+           (type boolean propagate))
+  (let ((neuron (connection-to connection)))
     (when neuron
-      (when (and propagate
-                 (not (neuron-has-run neuron)))
-        (run-neuron neuron)))))
+      (let ((output (* (connection-weight connection) value)))
+        (setf (connection-output connection) output)
+        (when (and propagate
+                   (not (neuron-has-run neuron)))
+          (run-neuron neuron))))))
   
