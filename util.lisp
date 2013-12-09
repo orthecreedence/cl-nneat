@@ -1,6 +1,6 @@
 ;;; Provides basic utility functions used through the system.
 
-(in-package :nneat)
+(in-package :cl-nneat)
 
 (defun contains (sequence value &key (test #'equal))
   "Test if a value exists in the given list. Default test is #'equal"

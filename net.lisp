@@ -9,7 +9,7 @@
 ;;; modifications. In other words, its genome is a set of instructions to build
 ;;; an exact copy of the network as it exists.
 
-(in-package :nneat)
+(in-package :cl-nneat)
 
 (defclass net ()
   ((inputs :accessor net-inputs :initform nil)

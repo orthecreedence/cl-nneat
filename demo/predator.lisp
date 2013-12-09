@@ -1,4 +1,4 @@
-(in-package :nneat-animals)
+(in-package :cl-nneat-demo)
 
 (defclass predator (animal) ())
 

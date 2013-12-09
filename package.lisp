@@ -1,4 +1,4 @@
-(defpackage :nneat
+(defpackage :cl-nneat
   (:use :cl :cl-user)
   (:export ;; network exports
            #:net

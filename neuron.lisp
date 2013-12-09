@@ -9,7 +9,7 @@
 ;;; :output cannot have any outgoing connections, whereas :neuron can have an
 ;;; arbitrary number of incoming/outgoing connections (it can even connect to itself).
 
-(in-package :nneat)
+(in-package :cl-nneat)
 
 (defclass neuron (base)
   ((inputs :accessor neuron-inputs :initform (make-array 0 :adjustable t :fill-pointer t))

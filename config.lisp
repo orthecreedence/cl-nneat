@@ -1,6 +1,6 @@
 ;;; this defines the configuration values for the nneat system: neuron
 ;;; activation function parameters, mutation probabilities, etc.
-(in-package :nneat)
+(in-package :cl-nneat)
 
 ;; neuron defines, mainly having to do with the activation function (sigmoid)
 ;; and initial neuron parameters.

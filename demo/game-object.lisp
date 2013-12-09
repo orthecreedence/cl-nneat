@@ -1,4 +1,4 @@
-(in-package :nneat-animals)
+(in-package :cl-nneat-demo)
 
 (defclass game-object ()
   ((x :accessor x :initarg :x :initform (random *window-x*))

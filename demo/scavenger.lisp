@@ -1,4 +1,4 @@
-(in-package :nneat-animals)
+(in-package :cl-nneat-demo)
 
 (defclass scavenger (animal)
   ((dead-x :accessor scavenger-dead-x)

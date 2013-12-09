@@ -1,4 +1,4 @@
-(in-package :nneat-animals)
+(in-package :cl-nneat-demo)
 
 (defclass animal (game-object)
   ((net :accessor animal-net :initarg :net :initform nil)

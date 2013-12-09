@@ -1,14 +1,8 @@
 (in-package :cl-nneat-demo)
 
-(defvar *packages-loaded* nil)
-(unless *packages-loaded*
-  (dolist (p '(:nneat :cl-opengl :cl-glu :lispbuilder-sdl :bordeaux-threads :sdl-window :cl-hash-util))
-    (ql:quickload p))
-  (setf *packages-loaded* t))
-
-(defpackage :nneat-animals
-  (:use :cl :cl-user :nneat :cl-hash-util))
-(in-package :nneat-animals)
+(defpackage :cl-nneat-demo
+  (:use :cl :cl-nneat :cl-hash-util))
+(in-package :cl-nneat-demo)
 
 (setf *random-state* (make-random-state t))
 

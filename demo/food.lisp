@@ -1,4 +1,4 @@
-(in-package :nneat-animals)
+(in-package :cl-nneat-demo)
 
 (defclass food (game-object)
   ((amount :accessor food-amount :initform (1+ (random 2)))))

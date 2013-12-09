@@ -1,4 +1,4 @@
-(in-package :nneat-animals)
+(in-package :cl-nneat-demo)
 
 (defclass world ()
   ((objects :accessor world-objects :initform (make-array 0 :fill-pointer t :adjustable t))

@@ -1,4 +1,4 @@
-(in-package :nneat-animals)
+(in-package :cl-nneat-demo)
 
 (defparameter *window-x* 600)
 (defparameter *window-y* 600)

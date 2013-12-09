@@ -1,2 +1,2 @@
-(in-package :nneat-animals)
+(in-package :cl-nneat-demo)
 

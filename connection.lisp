@@ -3,7 +3,7 @@
 ;;; connections can be forward or backward (ie temporal) and the system makes no
 ;;; distinction between the two types. in other words, a connection can connect
 ;;; any regular neuron to any regular neuron, eve itself.
-(in-package :nneat)
+(in-package :cl-nneat)
 
 (defclass connection (base)
   ((from :accessor connection-from :initarg :from :initform nil)

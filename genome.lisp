@@ -6,7 +6,7 @@
 ;;; Note that the only problem with this approach is an ever-growing genome...
 ;;; even if a connection is added then removed later on, both instructions are
 ;;; still encoded into the genome indefinitely.
-(in-package :nneat)
+(in-package :cl-nneat)
 
 (defclass genome ()
   ((genes :accessor genome-genes :initarg :genes :initform (make-array 0 :fill-pointer t :adjustable t)))
