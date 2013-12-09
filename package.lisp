@@ -34,7 +34,7 @@
            #:*neuron-default-threshold*
            #:*neuron-binary-output*
            #:*neuron-always-output*
-           #:*neuron-output-passthrough* 
+           #:*neuron-output-passthrough*
            #:*dynamic-neuron*
            #:*dynamic-neuron-self-govern*
            #:*dynamic-neuron-threshold-delta*
