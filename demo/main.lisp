@@ -1,3 +1,5 @@
+(in-package :cl-nneat-demo)
+
 (defvar *packages-loaded* nil)
 (unless *packages-loaded*
   (dolist (p '(:nneat :cl-opengl :cl-glu :lispbuilder-sdl :bordeaux-threads :sdl-window :cl-hash-util))
@@ -38,16 +40,6 @@ nneat-animals::raytrace-nearby-objects
 |#
 ;; /profile!!
 
-
-(load "config")
-(load "util")
-(load "game-object")
-(load "food")
-(load "animal")
-(load "scavenger")
-(load "predator")
-(load "population")
-(load "world")
 
 (defparameter *world* nil)
 (defparameter *main-thread* nil)

@@ -1,6 +1,4 @@
-(in-package :asdf)
-
-(defsystem #:nneat
+(defsystem #:cl-nneat
   :version "0.1.1"
   :maintainer "Andrew Lyon <orthecreedence@gmail.com>"
   :licence "MIT"
